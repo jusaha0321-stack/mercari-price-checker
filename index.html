@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メルカリ 穴場リサーチツール | 需給ギャップ分析</title>
+<meta name="description" content="メルカリの検索需要と出品数を分析し、高利益率の穴場商品を発見するツール">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-text">メルカリ<strong>穴場</strong>ラボ</span>
+    </div>
+    <div class="header-badges">
+      <span class="badge badge-live">● LIVE分析</span>
+      <span class="badge badge-update">最終更新: <span id="lastUpdate"></span></span>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <!-- Hero Search -->
+  <section class="hero">
+    <h1 class="hero-title">検索需要 <span class="accent">↑</span> 出品数 <span class="accent">↓</span> ＝ 利益率 <span class="accent gold">↑</span></h1>
+    <p class="hero-sub">需給ギャップから高利益の穴場商品を発見する</p>
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="キーワード・品番で検索（例：SKX007、555088-060、PSA10）" autocomplete="off">
+      <button id="searchBtn" class="search-btn">
+        <span class="btn-icon">🔍</span> 分析する
+      </button>
+    </div>
+    <div class="quick-tags">
+      <span class="tag-label">急上昇：</span>
+      <button class="quick-tag" onclick="doSearch('リザードン 旧裏面')">リザードン 旧裏面</button>
+      <button class="quick-tag" onclick="doSearch('Air Jordan 1')">Air Jordan 1</button>
+      <button class="quick-tag" onclick="doSearch('SKX007')">セイコー SKX007</button>
+      <button class="quick-tag" onclick="doSearch('PSA')">PSA グレード品</button>
+      <button class="quick-tag" onclick="doSearch('スタバ タンブラー')">スタバ限定</button>
+      <button class="quick-tag" onclick="doSearch('Levi\'s 501')">Levi's 501</button>
+    </div>
+  </section>
+
+  <!-- Photo Judgment Section -->
+  <section class="photo-judge-section" id="photoJudgeSection">
+    <div class="photo-judge-card">
+      <div class="pj-header">
+        <h2 class="section-title">📸 AI写真判定</h2>
+        <p class="pj-sub">画像をアップロードして、状態・相場・偽造リスクを瞬時に分析します</p>
+      </div>
+      
+      <div class="pj-content">
+        <div class="pj-upload-area" id="pjUploadArea">
+          <input type="file" id="pjFileInput" accept="image/*" hidden>
+          <div class="pj-upload-content" id="pjUploadContent">
+            <div class="pj-upload-icon">📤</div>
+            <div class="pj-upload-text">画像をドラッグ＆ドロップ<br>または<span class="text-primary">クリックして選択</span></div>
+            <button class="pj-camera-btn" id="pjCameraBtn" type="button">
+              <span class="btn-icon">📸</span> カメラで撮影する
+            </button>
+          </div>
+          <img id="pjPreview" class="pj-preview" style="display:none;" alt="Preview">
+        </div>
+        
+        <div class="pj-result-area" id="pjResultArea" style="display:none;">
+          <!-- Loading State -->
+          <div class="pj-loading" id="pjLoading">
+            <div class="spinner"></div>
+            <div class="pj-loading-text">AIが画像を解析中...</div>
+          </div>
+          
+          <!-- Result State -->
+          <div class="pj-result-content" id="pjResultContent" style="display:none;">
+            <div class="pj-result-header">
+              <div class="pj-result-badge">✨ 分析完了</div>
+              <h3 class="pj-result-title" id="pjResultTitle">—</h3>
+            </div>
+            
+            <div class="pj-metrics">
+              <div class="pj-metric">
+                <div class="pj-metric-label">状態ランク</div>
+                <div class="pj-metric-val score-val" id="pjRank">—</div>
+              </div>
+              <div class="pj-metric">
+                <div class="pj-metric-label">推定相場</div>
+                <div class="pj-metric-val profit-val" id="pjPrice">—</div>
+              </div>
+              <div class="pj-metric">
+                <div class="pj-metric-label">偽造品リスク</div>
+                <div class="pj-metric-val" id="pjRisk">—</div>
+              </div>
+            </div>
+            
+            <div class="pj-insight">
+              <div class="pj-insight-icon">💡</div>
+              <div class="pj-insight-text" id="pjInsightText">—</div>
+            </div>
+            
+            <button class="pj-reset-btn" id="pjResetBtn">別の画像を判定する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPI Cards -->
+  <section class="kpi-row" id="kpiRow" style="display:none">
+    <div class="kpi-card" id="kpiDemand">
+      <div class="kpi-icon">🔥</div>
+      <div class="kpi-label">推定月間検索数</div>
+      <div class="kpi-value" id="valDemand">—</div>
+      <div class="kpi-change" id="chgDemand"></div>
+    </div>
+    <div class="kpi-card" id="kpiSupply">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">現在の出品数</div>
+      <div class="kpi-value" id="valSupply">—</div>
+      <div class="kpi-change" id="chgSupply"></div>
+    </div>
+    <div class="kpi-card" id="kpiScore">
+      <div class="kpi-icon">💎</div>
+      <div class="kpi-label">穴場スコア</div>
+      <div class="kpi-value score-val" id="valScore">—</div>
+      <div class="kpi-change" id="chgScore"></div>
+    </div>
+    <div class="kpi-card" id="kpiProfit">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">推定利益率</div>
+      <div class="kpi-value profit-val" id="valProfit">—</div>
+      <div class="kpi-change" id="chgProfit"></div>
+    </div>
+  </section>
+
+  <!-- Charts Row -->
+  <section class="charts-row" id="chartsRow" style="display:none">
+    <div class="chart-card wide">
+      <h3 class="chart-title">📈 需給トレンド（過去30日）</h3>
+      <canvas id="trendChart" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3 class="chart-title">⚖️ 需給バランス</h3>
+      <div class="gauge-wrap">
+        <canvas id="gaugeChart" height="180"></canvas>
+        <div class="gauge-label" id="gaugeLabel"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Price Analysis -->
+  <section class="price-section" id="priceSection" style="display:none">
+    <div class="price-card">
+      <h3 class="chart-title">💴 価格帯分析</h3>
+      <canvas id="priceChart" height="100"></canvas>
+    </div>
+    <div class="insight-card">
+      <h3 class="chart-title">🎯 AI インサイト</h3>
+      <div id="insightList" class="insight-list"></div>
+    </div>
+  </section>
+
+  <!-- Opportunity Table -->
+  <section class="table-section">
+    <div class="table-header">
+      <div class="table-title-row">
+        <h2 class="section-title">🏆 穴場ランキング</h2>
+        <span class="result-count" id="resultCount">全20件</span>
+      </div>
+      <div class="table-controls">
+        <div class="table-search-wrap">
+          <span class="table-search-icon">🔎</span>
+          <input type="text" id="tableSearch" class="table-search-input" placeholder="品番・型番・キーワードで絞り込み（例: DW-5900BB、LOB-001、W32）">
+          <button id="tableClearBtn" class="table-clear-btn" style="display:none">✕</button>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="filterCategory('all', this)">すべて</button>
+          <button class="filter-btn" onclick="filterCategory('hobby', this)">ホビー</button>
+          <button class="filter-btn" onclick="filterCategory('fashion', this)">ファッション</button>
+          <button class="filter-btn" onclick="filterCategory('electronics', this)">家電</button>
+          <button class="filter-btn" onclick="filterCategory('beauty', this)">コスメ</button>
+          <button class="filter-btn" onclick="filterCategory('sports', this)">スポーツ</button>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="rankTable">
+        <thead>
+          <tr>
+            <th class="th-sortable" data-col="rank" id="th-rank">順位 <span class="sort-icon">↕</span></th>
+            <th>キーワード</th>
+            <th>カテゴリ</th>
+            <th class="th-sortable" data-col="demand" id="th-demand">需要数 <span class="sort-icon">↕</span></th>
+            <th class="th-sortable" data-col="supply" id="th-supply">出品数 <span class="sort-icon">↕</span></th>
+            <th class="th-sortable active-col" data-col="score" id="th-score">穴場スコア <span class="sort-icon">↓</span></th>
+            <th class="th-sortable" data-col="profit" id="th-profit">推定利益率 <span class="sort-icon">↕</span></th>
+            <th class="th-sortable" data-col="diff" id="th-diff">難易度 <span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>⚠️ このツールはデモ目的のシミュレーションです。実際の取引判断は自己責任でお願いします。</p>
+</footer>
+
+<!-- Camera Overlay -->
+<div class="camera-overlay" id="cameraOverlay" style="display:none;">
+  <div class="camera-container">
+    <video id="cameraVideo" autoplay playsinline></video>
+    <canvas id="cameraCanvas" style="display:none;"></canvas>
+    <div class="camera-controls">
+      <button class="camera-close-btn" id="cameraCloseBtn" type="button">✕ キャンセル</button>
+      <button class="camera-capture-btn" id="cameraCaptureBtn" type="button"><span class="btn-icon">📸</span> 撮影</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
